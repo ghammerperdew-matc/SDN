@@ -20,16 +20,16 @@ for item in router1.items():
     print("Key = " + item[0] + "\t" + "Value = " + item[1])
 """
 
-def print_router():
-    for key in router1.keys():
+def print_router(dictionary):
+    for key in dictionary.keys():
         print(f"{key:10}", end="")
 
     print("\n" + "-" * 70)
     
-    for value in router1.values():
+    for value in dictionary.values():
         output = value.split()
         print(f"{output[0]:10}", end="")
 
     return(None)
 
-print_router()
+print_router(router1)
