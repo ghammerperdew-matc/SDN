@@ -98,4 +98,5 @@ def main():
         else:
             print("Invalid input - try again.")
 
+main()
 quit()
