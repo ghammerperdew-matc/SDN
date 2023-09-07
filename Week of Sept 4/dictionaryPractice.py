@@ -14,5 +14,3 @@ router1["model"] = "2901"
 print(router1.keys())
 print(router1.values())
 print(router1.items())
-
-

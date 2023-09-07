@@ -9,5 +9,5 @@ router1 = {
     }
 
 
-for item in router1.items():
-    print("Key = " + item[0] + "\t" + "Value = " + item[1])
+for key, value in router1.items():
+    print("Key = " + key + "\t" + "Value = " + value)
