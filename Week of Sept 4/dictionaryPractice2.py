@@ -1,3 +1,16 @@
+#!/usr/bin/env python3
+
+"""
+Author: Gavin Hammer-Perdew
+Date created: 9-5-2023
+
+This script contains a dictionary of information from a Cisco router.
+The purpose is to display the information contained in the dictionary in a list format,
+and then ask the user if they would like to change the management IP address (mgmtIP).
+
+"""
+
+#dictionary of router info
 router1 = {
     "brand": "Cisco",
     "model": "2901",
@@ -47,13 +60,11 @@ def check_address(IP_address):
                     #if range is invalid, set status and prompt to re-enter address
                     else:
                         status = False
-                        print("Invalid input. Enter the address in the format of x.x.x.x where x is an integer from 0-255.")
                         break
                 
-                #if ther are letters, prompt to re-enter address
+                #if there are letters, prompt to re-enter address
                 else:
                     status = False
-                    print("Invalid input. Enter the address in the format of x.x.x.x where x is an integer from 0-255.")
                     break
                 
             return(status)
@@ -90,7 +101,6 @@ def main():
                     print("Invalid input. Enter the address in the format of x.x.x.x where x is an integer from 0-255.")
 
 
-
         elif userInput.lower() == "n":
             #break loop
             break
@@ -98,5 +108,11 @@ def main():
         else:
             print("Invalid input - try again.")
 
+        return(None)
+
+
+#Call main function
 main()
+
+#Once main loop is broken, main() returns None, and the script closes with quit()
 quit()
