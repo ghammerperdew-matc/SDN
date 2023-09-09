@@ -7,14 +7,15 @@ Date created: 9-5-2023
 This script contains a dictionary of information from a Cisco router.
 The purpose is to display the information contained in the dictionary in a list format,
 and then ask the user if they would like to change the management IP address (mgmtIP).
-
+If the user enters a valid address, it is changed in the dictionary.
+This process loops until broken by the user.
 """
 
 #dictionary of router info
 router1 = {
     "brand": "Cisco",
     "model": "2901",
-    "mgmtIP": "10.0.0.1",
+    "mgmtIP": "10.0.0.1", 
     "G0/0": "10.0.1.1 /24",
     "G0/1": "10.0.2.1 /24",
     "G0/2": "10.1.3.1 /24",
@@ -22,19 +23,31 @@ router1 = {
     }
 
 
+#function for printing the router dictionary in a specific format, returns None
+#prints keys and their values on separate lines with a dotted line between
 def print_router(dictionary):
+    #print keys on first line
     for key in dictionary.keys():
-        print(f"{key:13}", end="")
+        print(f"{key:20}", end="")
 
-    print("\n" + "-" * 86)
-    
+    #print dotted line
+    print("\n" + "-" * 128)
+
+    #print values on second line
     for value in dictionary.values():
+
+        #some of the IP addresses are in CIDR notation
+        #need to split the subnet masks from the addresses
         output = value.split()
-        print(f"{output[0]:13}", end="")
+
+        #prints only first item in list generate by .values()
+        #thus not printing subnet mask
+        print(f"{output[0]:20}", end="")
 
     return(None)
 
 
+#function for validating the IP address, returns True or False
 def check_address(IP_address):
         #split IP address into individual octets -- returns a list
         address = IP_address.split(".")
@@ -67,9 +80,11 @@ def check_address(IP_address):
                     status = False
                     break
                 
+            #return the value of the status variable for the function
             return(status)
 
 
+#main function, returns None
 def main():
     #print dictionary content (formatted for readability)
     print_router(router1)
@@ -81,6 +96,7 @@ def main():
         print("\nWould you like to change the mgmtIP address?")
         userInput = str(input("Enter Y or N: "))
 
+        #check user input
         if userInput.lower() == "y":
             while(True):
                 #enter address
@@ -108,7 +124,7 @@ def main():
         else:
             print("Invalid input - try again.")
 
-        return(None)
+    return(None)
 
 
 #Call main function
