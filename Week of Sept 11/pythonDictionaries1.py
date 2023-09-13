@@ -33,6 +33,6 @@ devices = {
 
 
 #iterate through nested dictionaries that represent individual devices
-for device in devices.keys():
+for device in devices:
     #print the management IP address with "ping" behind it
     print("ping", devices[device]["mgmtIP"])
