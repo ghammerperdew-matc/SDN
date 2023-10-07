@@ -1,15 +1,31 @@
+#!/usr/bin/env python3
+
+"""
+Author: Gavin Hammer-Perdew
+Date created: 10-3-2023
+
+Purpose: make API calls to two distribution switches and print the OSPF neighbors and the link statuses of each neighbor connection
+"""
+
 import requests
 import json
 import urllib3
 
+#This line keeps the certificate warning from appearing in the output when the script is run
 urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 
 def get_OSPF_neighbors(mgmt_IP_address):
+##  Receives the management IP address of an NX-OS switch
+##  Makes an API call to that switch for OSPF neighbors
+##  Returns the response from the API as a JSON object
     
+
+    #device credentials for the specific NX-OS switch that is being targeted
     switchuser='cisco'
     switchpassword='cisco'
-
+    
+    #variables used to form an HTTPS request to the switch API
     url='https://' + mgmt_IP_address + '/ins'
     myheaders={'content-type':'application/json-rpc'}
     payload=[
@@ -17,19 +33,23 @@ def get_OSPF_neighbors(mgmt_IP_address):
         "jsonrpc": "2.0",
         "method": "cli",
         "params": {
-        "cmd": "show ip ospf neighbor",
+        "cmd": "show ip ospf neighbor", #actual command to be entered on the switch's CLI
         "version": 1
         },
         "id": 1
       }
     ]
 
+    #verify=False is included to get around not being able to verify the site's certificate
     response = requests.post(url,data=json.dumps(payload), verify=False, headers=myheaders, auth=(switchuser, switchpassword)).json()
 
     return(response)
 
 
 def print_OSPF_neighbors(OSPF_neighbor_dict):
+##  Receives a JSON object containing OSPF neighbor information
+##  Prints the router ID, neighbor IP address, and connected interface for each neighbor relationship
+##  Returns nothing
 
     neighbor_table_list = OSPF_neighbor_dict["result"]["body"]["TABLE_ctx"]["ROW_ctx"]["TABLE_nbr"]["ROW_nbr"]
 
@@ -42,6 +62,10 @@ def print_OSPF_neighbors(OSPF_neighbor_dict):
 
 
 def main():
+##  Main function receives nothing and returns nothing
+##  Iterates through a dictionary to make API calls and print specific OSPF neighbor information from API responses
+
+    #List of dictionaries containing basic device information
     devices = [
         {
         "hostname": "dist-sw01",
@@ -55,6 +79,7 @@ def main():
             }
         ]
 
+    #iterate through the device dictionaries and use the IP addresses to make API calls and print information in a readable format
     for device in devices:
 
         mgmtIP = device["mgmtIP"]
