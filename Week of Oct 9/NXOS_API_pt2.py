@@ -30,8 +30,6 @@ def change_hostname(hostname):
 
     switchuser='cisco'
     switchpassword='cisco'
-
-
     url='https://10.10.20.177/ins'
     myheaders={'content-type':'application/json-rpc'}
     payload=[
@@ -74,7 +72,11 @@ def change_hostname(hostname):
     ]
 
     response = requests.post(url,data=json.dumps(payload), verify=False, headers=myheaders, auth=(switchuser, switchpassword)).json()
+
+    #the output of show version is the 4th dictionary in response from the switch, so response[3] selects just that dictionary to work
     show_version_output = response[3]
+
+    #selects just the current hostname from the 'show version' command -- this is to confirm that it's been changed
     hostname = show_version_output["result"]["body"]["host_name"]
 
     return hostname
