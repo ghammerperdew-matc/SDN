@@ -6,9 +6,13 @@ import urllib3
 urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 
-#receives an IP address (or subnet mask)
+#receives an IP address
 #validates the IP address
 #returns True or False
+"""
+This is also used to check that the subnet mask meets the same basic requirements.
+I know this is not the correct way, but we also don't need it to be right now, and this will eventually be updated.
+"""
 def check_address(IP_address):
         #split IP address into individual octets -- returns a list
         octet_list = IP_address.split(".")
@@ -57,6 +61,9 @@ def print_interfaces(intf_list):
     return None
 
 
+#receives a management IP address for a device
+#sends an API request to that device with the "show ip interface brief" command
+#returns the dictionary containing the interface interfaces
 def show_IP_interface_brief(mgmt_address):
 
     switchuser='cisco'
@@ -76,11 +83,16 @@ def show_IP_interface_brief(mgmt_address):
     ]
 
     response = requests.post(url,data=json.dumps(payload), verify=False, headers=myheaders, auth=(switchuser, switchpassword)).json()
+
+    #ROW_intf is a dictionary key with a value of the dictionary containing the interface information
     interfaces = response["result"]["body"]["TABLE_intf"]["ROW_intf"]
 
     return interfaces
 
 
+#receives an interface input from a user and a dictionary of interfaces for a given device
+#compares the interface from user input with the interfaces in the dictionary to see if it exists on the given device
+#returns True or False (exists or not)
 def interface_exists(user_input_interface, intf_list):
 
     exists = False
@@ -92,6 +104,10 @@ def interface_exists(user_input_interface, intf_list):
     return exists
 
 
+#receives a management IP address, interface name, new address and subnet mask to be assigned to the received interface
+#makes an API call to the device at the recieve management address to change the IP address on the received interface
+####this assumes that the management address, interface, new address and subnet mask have been verified####
+#returns the response from the device -- if everything worked, it will contain almost nothing, but any errors that occur will be returned otherwise
 def change_interface_address(mgmt_address, int_name, new_address, subnet_mask):
 
     switchuser='cisco'
@@ -138,34 +154,48 @@ def change_interface_address(mgmt_address, int_name, new_address, subnet_mask):
     ]
 
     response = requests.post(url,data=json.dumps(payload), verify=False, headers=myheaders, auth=(switchuser, switchpassword)).json()
+    
     return response
 
 
+#receives and returns nothing
+#gets input from the user and verifies it and prompts them to either quit or enter valid information if they enter invalid info to start with
+#sends API calls to a device to change IP address on an interface of a specified device
 def main():
 
+    #main while loop break variable
     _quit_ = "n"
 
+    #main while loop
     while _quit_ != "y":
 
+        #break variable for valid_address while loop
         valid_address = False
         while valid_address == False:
             mgmt_address = input("Please enter the management IP address of the device you would like to modify: ")
 
             if mgmt_address.lower() == "q":
-                _quit_= "y"
-                valid_address = True
-
+                _quit_= "y" #sets quit variable to the quit value, so when the loop is broken, the main while loop breaks too
+                valid_address = True #breaks valid_address loop
+                
+            #if the quit value is "n", the input address is evaluated
+            #if it's "y", valid_address is set to True (again just in case), so that the valid_address loop will break
+            #this pattern repeats for each while loop for input
             if _quit_ != "y":
                 if check_address(mgmt_address) ==  False:
                     print("Invalid address - try again or enter 'Q' to quit.")
                 else:
                     valid_address = True
                     print("\n")
-                
+        
+        #only continues to next loop if _quit_ is "n" -- this pattern repeats for all input loops
         if _quit_ != "y":
+            #gets 'show ip interface brief' output from the device specified by management IP
             int_IP_addrs = show_IP_interface_brief(mgmt_address)
+            #prints the list of interfaces with their IP addresses in a readable format
             print_interfaces(int_IP_addrs)
 
+            #break variable for valid_interface while loop
             valid_interface = False
             while valid_interface == False:
                 interface = input("Please enter the name of the interface to modify -- ensure it is the same as listed above: ")
@@ -182,22 +212,24 @@ def main():
                         valid_interface = True
 
         if _quit_ != "y":
-            valid_address = False
-            while valid_address == False:
+            #break variable for valid_address while loop
+            valid_new_address = False
+            while valid_new_address == False:
                 new_address = input("Please enter a new valid IP address for the interface: ")
 
                 if new_address.lower() == "q":
                     _quit_ = "y"
-                    valid_address = True
+                    valid_new_address = True
 
                 if _quit_ != "y":
 
                     if check_address(new_address) == False:
                         print("Invalid IP address -- try again or enter 'Q' to quit.")
                     else:
-                        valid_address = True
+                        valid_new_address = True
                     
         if _quit_ != "y":
+            #break variable for valid_subnet while loop
             valid_subnet = False
             while valid_subnet == False:
                 subnet_mask = input("Please enter a valid subnet mask (ex: 255.255.255.0): ")
@@ -212,13 +244,19 @@ def main():
                         print("Invalid subnet mask -- try again or enter 'Q' to quit.")
                     else:
                         valid_subnet = True
-
+        
+        #once all of the necessary input has been gathered, it is used to call the necessary functions
         if _quit_ != "y":
+            #makes the request for changin the IP address on the given interface on the given device
             change_interface_address(mgmt_address, interface, new_address, subnet_mask)
+            
+            #makes a new call to get the interfaces/IP addresses
             int_IP_addrs = show_IP_interface_brief(mgmt_address)
+            
+            #prints the new list of ints/addresses -- the address of the specified interface should be different now
             print_interfaces(int_IP_addrs)
 
-
+        return None
 
 
 main()
