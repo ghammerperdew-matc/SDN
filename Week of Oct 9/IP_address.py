@@ -35,39 +35,16 @@ def check_address(IP_address):
         return status
 
 
-###receives and IP address
-###adds two to the value of the third octet (ex: 192.168.1.1 --> 192.168.3.1)
-###returns modified address
-##def add_two(IP_address):
-##
-##    IP_address = IP_address.split(".")
-##    
-##    IP_address[2] = str(int(IP_address[2]) + 2)
-##
-##    new_IP_address = ".".join(IP_address)
-##
-##    return new_IP_address
+#receives and IP address
+#adds two to the value of the third octet (ex: 192.168.1.1 --> 192.168.3.1)
+#returns modified address
+def add_two(IP_address):
 
-
-def add_val(IP_address, offset, octet):
-
-    if offset.is_integer():
-
-        if octet.is_integer():
-            octect = octet-1
-        else:
-            print("Error: octet value must be an integer")
-            return IP_address
-
-        IP_address = IP_address.split(".")
+    IP_address = IP_address.split(".")
     
-        IP_address[octet] = str(int(IP_address[octet]) + offset)
+    IP_address[2] = str(int(IP_address[2]) + 2)
 
-        new_IP_address = ".".join(IP_address)
-
-    else:
-        print("Error: offset value must be an integer")
-        return IP_address
+    new_IP_address = ".".join(IP_address)
 
     return new_IP_address
 
@@ -81,7 +58,7 @@ def main():
     if check_address(address) == False:
         print("That is an invalid IP address, and this is why we can't have nice things.")
     else:
-        address = add_val(address)
+        address = add_two(address)
         print("The modified address is:", address)
 
     return None
