@@ -36,21 +36,24 @@ def check_address(IP_address):
 
 
 ###receives and IP address, octet to modify (1-4) and offset (how much to change it by)
-###adds two to the value of the third octet (ex: 192.168.1.1 --> 192.168.3.1)
-###returns modified address
+###checks validity of octet number and offset
+###if both valid, adds the specified amount to the value of specified octet (ex: 192.168.1.1 --> 192.168.3.1)
+###returns modified address or "-1" for invalid octet anbd "-2" for invalid offset
 def add_val(IP_address, octet, offset):
 
     if octet <= 4 and octet > 0:
         octet = octet-1
-    else:
-        print("Invalid octet value -- address not modified")
-        return IP_address
-        
-    IP_address = IP_address.split(".")
-    
-    IP_address[octet] = str(int(IP_address[octet]) + offset)
 
-    new_IP_address = ".".join(IP_address)
+        IP_address = IP_address.split(".")
+
+        if (int(IP_address[octet]) + offset) < 0 or (int(IP_address[octet]) + offset) > 255:
+            new_IP_address = "-2"
+        else:
+            IP_address[octet] = str(int(IP_address[octet]) + offset)
+            new_IP_address = ".".join(IP_address)
+        
+    else:
+        new_IP_address = "-1"
 
     return new_IP_address
 
@@ -58,7 +61,6 @@ def add_val(IP_address, octet, offset):
 #receives nothing and returns nothing
 #asks user to input address, octet and offset
 def main():
-
     address = input("Please enter valid IP address: ")
     octet = int(input("Please specify which octet of the address should be offset (integer 1-4): "))
     offset = int(input("Please specify by what value each device should be offset: "))
@@ -67,8 +69,13 @@ def main():
         print("That is an invalid IP address, and this is why we can't have nice things.")
     else:
         address = add_val(address, octet, offset)
-        print("The address is:", address)
-
+        if address != "-1" and address != "-2":
+                print("Updated address is: ", address)
+        elif address == "-1":
+                print("Error: invalid octet range")
+        else:
+                print("Error: invalid offset -- new octet value would be out of range")
+                        
     return None
 
 

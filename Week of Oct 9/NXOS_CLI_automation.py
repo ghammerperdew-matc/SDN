@@ -84,7 +84,7 @@ def show_IP_interface_brief(mgmt_address):
 
     response = requests.post(url,data=json.dumps(payload), verify=False, headers=myheaders, auth=(switchuser, switchpassword)).json()
 
-    #ROW_intf is a dictionary key with a value of the dictionary containing the interface information
+    #ROW_intf is a dictionary key with a value of the list of dictionaries containing the interface information
     interfaces = response["result"]["body"]["TABLE_intf"]["ROW_intf"]
 
     return interfaces
