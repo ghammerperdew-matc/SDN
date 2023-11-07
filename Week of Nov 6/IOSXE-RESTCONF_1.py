@@ -1,5 +1,9 @@
 import requests
 import json
+import urllib3
+
+#This line keeps the certificate warning from appearing in the output when the script is run
+urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 def get_Ints(device_IP):
     url = "https://" + device_IP + ":443/restconf/data/ietf-interfaces:interfaces"
@@ -51,6 +55,8 @@ def main():
     device_IP = "10.10.20.48"
 
     intf_list = get_Ints(device_IP)
+
+    print(intf_list, "\n")
 
     print_Int(intf_list)
 
