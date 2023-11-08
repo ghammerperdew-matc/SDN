@@ -1,4 +1,5 @@
 import requests
+import json
 
 def getCookie(addr) :
 
@@ -27,5 +28,56 @@ address = '10.10.20.177'
 
 cookie = getCookie(address)
 
+url = "https://" + address + "/api/mo/sys.json"
 
+payload = {
+    "topSystem": {
+        "children": [
+            {
+                "ipv4Entity": {
+                    "children": [
+                        {
+                            "ipv4Inst": {
+                                "children": [
+                                    {
+                                        "ipv4Dom": {
+                                            "attributes": {
+                                                "name": "default"
+                                        },
+                                        "children": [
+                                            {
+                                                "ipv4If": {
+                                                    "attributes": {
+                                                        "id": "vlan101"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "ipv4Addr": {
+                                                                "attributes": {
+                                                                    "addr": "172.16.101.8/24"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
 
+headers = {
+    'Content-Type:': 'application/json',
+    'Cookie': 'APIC-cookie=' + cookie
+    }
+
+response = requests.request("POST", url, verify = False, headers=headers, data=json.dumps(payload)).json()
+
+print(response)

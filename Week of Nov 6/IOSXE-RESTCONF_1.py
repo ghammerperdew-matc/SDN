@@ -56,8 +56,6 @@ def main():
 
     intf_list = get_Ints(device_IP)
 
-    print(intf_list, "\n")
-
     print_Int(intf_list)
 
 
