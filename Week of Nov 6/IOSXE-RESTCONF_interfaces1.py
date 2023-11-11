@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+
+"""
+Author: Gavin Hammer-Perdew
+Date created: 11-7-2023
+
+Purpose: show a user interfaces on a given device and ask which interface on which they would like to change the IP address
+"""
+
 import requests
 import json
 import urllib3
@@ -5,6 +14,9 @@ import urllib3
 #This line keeps the certificate warning from appearing in the output when the script is run
 urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
+#receives a device IP address
+#makes RESTCONF call for device interface information
+#returns list of dictionaries containing device information
 def get_int_rest(device_IP):
     url = "https://" + device_IP + ":443/restconf/data/ietf-interfaces:interfaces"
 
@@ -26,6 +38,9 @@ def get_int_rest(device_IP):
     return(intf_list)
 
 
+#receives a list of dictionaries containing interface information
+#prints the info in a formatted list
+#returns nothing
 def print_intf_list(intf_list):
     
     for intf in intf_list:
@@ -52,6 +67,9 @@ def print_intf_list(intf_list):
     return(None)
 
 
+#receives a device IP address, name of intf to modify, new address for said interface and new netmask
+#makes RESTCONF call to the given device to change the IP address/netmask on the provided interface -- assumes all info is accurate/valid
+#returns the response from the device (good to keep in case troubleshooting is necessary) -- response code should be 204 for success
 def change_intf_address(device_addr, intf_name, new_addr, new_netmask):
     url = "https://" + device_addr + ":443/restconf/data/ietf-interfaces:interfaces/interface=" + intf_name
     username = 'developer'
@@ -153,6 +171,11 @@ def validate_address(IP_address):
         return status
 
 
+#receives nothing
+#prints interface info for given device
+#asks user for input in while loops, no additional "quit" feature on this script
+#uses user input to change the IP address on the user-specified interface on the given device
+#returns nothing
 def main():
 
     device_addr = "10.10.20.48"
@@ -195,7 +218,7 @@ def main():
     #print updated list of interfaces
     print_intf_list(intf_list)
 
-    return None
+    return(None)
 
 
 main()
