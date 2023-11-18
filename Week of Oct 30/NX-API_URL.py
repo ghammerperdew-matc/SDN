@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Author: Gavin Hammer-Perdew
+Date created: 11-14-2023
+
+Purpose: send an API request for information regarding interfaces on a device and
+print the domain name and interface name of each interface from returned data
+"""
+
 import requests
 import json
 import urllib3
