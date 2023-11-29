@@ -14,14 +14,14 @@ import urllib3
 #This line keeps the certificate warning from appearing in the output when the script is run
 urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
-#receives an IP address of a device to which to make an API call (RESTCONF)
+#receives an IP address of a device to which to make an API call (RESTCONF), as well as a username and password
 #calls for list of interfaces and associated information
 #returns list of dictionaries containing interface information
-def get_Ints(device_IP):
+def get_Ints(device_IP, username, password):
     url = "https://" + device_IP + ":443/restconf/data/ietf-interfaces:interfaces"
 
-    username = 'developer'
-    password = 'C1sco12345'
+##    username = username
+##    password = password
     payload={}
     headers = {
       'Content-Type': 'application/yang-data+json',
@@ -71,9 +71,12 @@ def print_Int(intf_list):
 #main -- receives nothing, returns nothing
 def main():
 
-    device_IP = "10.10.20.48"
+    device_IP = "10.10.20.175"
 
-    intf_list = get_Ints(device_IP)
+    username = "cisco"
+    password = "cisco"
+
+    intf_list = get_Ints(device_IP, username, password)
 
     print_Int(intf_list)
 
