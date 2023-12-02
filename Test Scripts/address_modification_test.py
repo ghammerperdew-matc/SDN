@@ -5,7 +5,7 @@ Old function
 ###checks validity of octet number and offset
 ###if both valid, adds the specified amount to the value of specified octet (ex: 192.168.1.1 --> 192.168.3.1)
 ###returns modified address or "-1" for invalid octet anbd "-2" for invalid offset
-def add_val(IP_address, octet, offset):
+def increment_address(IP_address, octet, offset):
 
     if octet <= 4 and octet > 0:
         octet = octet-1
@@ -26,6 +26,10 @@ def add_val(IP_address, octet, offset):
 
 """
 New function
+
+This function shouldn't be used when checking user input in loops because it will just break the loops.
+It is best to use this one in scripts where function parameters are statically written or
+are taken from API responses (to double-check proper communication/handling of API calls/responses)
 """
 ###receives an IP address (string), octet number (int), method of changing octet value (string), value to set or increment octet value
 ###change methods --> "set" or "increment"

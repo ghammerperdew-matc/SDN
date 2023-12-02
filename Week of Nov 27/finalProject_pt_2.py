@@ -8,11 +8,37 @@ import urllib3
 urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 
-###receives and IP address, octet to modify (1-4) and offset (how much to change it by)
+###receives and IP address (in CIDR form), octet to modify (1-4) and offset (how much to change it by)
+###checks validity of octet number and offset
+###if both valid, adds the specified amount to the value of specified octet (ex: 192.168.1.1 --> 192.168.3.1)
+###returns modified address (with same netmask attached) or "-1" for invalid octet and "-2" for invalid offset
+def increment_CIDR_address(CIDR_address, octet, offset):
+
+    if octet <= 4 and octet > 0:
+        octet = octet-1
+
+        IP_address = CIDR_address.split("/")
+
+        IP_address[0] = IP_address[0].split(".")
+
+        if (int(IP_address[0][octet]) + offset) < 0 or (int(IP_address[0][octet]) + offset) > 255:
+            new_IP_address = "-2"
+        else:
+            IP_address[0][octet] = str(int(IP_address[0][octet]) + offset)
+            IP_address[0] = ".".join(IP_address[0])
+            new_IP_address = "/".join(IP_address)
+        
+    else:
+        new_IP_address = "-1"
+
+    return new_IP_address
+
+
+###receives and IP address (no netmask), octet to modify (1-4) and offset (how much to change it by)
 ###checks validity of octet number and offset
 ###if both valid, adds the specified amount to the value of specified octet (ex: 192.168.1.1 --> 192.168.3.1)
 ###returns modified address or "-1" for invalid octet anbd "-2" for invalid offset
-def add_val(IP_address, octet, offset):
+def increment_address(IP_address, octet, offset):
 
     if octet <= 4 and octet > 0:
         octet = octet-1
@@ -35,7 +61,7 @@ def add_val(IP_address, octet, offset):
 #makes call to the device at that IP for a session cookie
 #returns the cookie
 """ONLY NX-OS DEVICES"""
-def getCookie(address) :
+def get_cookie(address) :
     #Get Session Cookie
     url = "https://"+ address +"/api/aaaLogin.json"
 
@@ -69,10 +95,61 @@ def get_interfaces(addr, cookie):
     }
 
     #send API post request
-    response = requests.request("GET", url, verify = False, headers=headers, data=json.dumps(payload))
-    response = response.json()["imdata"]
+    response = requests.request("GET", url, verify = False, headers=headers, data=json.dumps(payload)).json()
+    response = response["imdata"]
 
     return response
+
+
+#receives a management IP address of a device, a list of dictionaries containing IPv4 interface info (no addr info), and an auth cookie for said device (NX-OS devices only)
+###must use get_interfaces() function to retrieve list of interface dicts
+#iterates the list and gets the address info for each interface (full dict of IPv4 addr information)
+#returns the list of dictionaries
+def get_interface_address(addr, intf_name, cookie):
+
+    for intf_dict in intf_dict_list:
+
+        url = "https://" + addr + "/api/node/mo/sys/ipv4/inst/dom-default/if-[" + intf_name + "].json?query-target=children"
+
+        #API payload -- empty because it's a GET request
+        payload = {}
+
+        #attach cookie to header
+        headers = {
+          'Content-Type': 'application/json',
+          'Cookie': 'APIC-cookie=' + cookie
+        }
+
+        #send API post request
+        response = requests.request("GET", url, verify = False, headers=headers, data=json.dumps(payload)).json()
+
+        intf_address = response["imdata"]["ipv4Addr"]["attributes"]["addr"]
+        
+    return intf_address
+
+
+
+"""ONLY NX-OS DEVICES"""
+def change_address(device_addr, cookie, interface, intf_new_addr)
+    url = "https://" + device_addr + "/api/node/mo/sys/ipv4/inst/dom-default/if-[" + interface + "].json?query-target=children"
+
+    payload = {
+        "ipv4Addr": {
+            "attributes": {
+                "addr": intf_new_addr, #should be entered in CIDR notation
+                "type": "primary"
+                }
+            }
+        }
+
+    headers = {
+        'Content-Type:': 'application/json',
+        'Cookie': 'APIC-cookie=' + cookie
+        }
+
+    response = requests.request("POST", url, verify = False, headers=headers, data=json.dumps(payload)).json()
+
+    return(response)
 
 
 #receives mgmt IP address (of an NX-OS device), VLAN number, VLAN name and an auth cookie
@@ -434,19 +511,28 @@ def main():
 
         if device['type'] == "NX-OS":
 
-            address = device['mgmtIP']
+            device_address = device['mgmtIP']
             
-            get_cookie(address)
+            cookie = get_cookie(device_address)
+            
+            intf_list = get_interfaces(device_address, cookie)
+            
+            #reconfigure IP addresses (increment from 172.16.x.x to 172.31.x.x)
+            for intf in intf_list:
 
-            #reconfigure addresses
-                #get dictionary of interfaces with addresses using API call
-                #iterate the dictionary of interfaces
-                    #use add_val() to increment the second octet of the address (needs to be x.31.x.x)
-                    #use another API call to change the address on the interface
+                intf_name = intf['ipv4If']['attributes']['id']
 
+                intf_address = get_interface_address(device_address, intf_name, cookie)
+
+                new_intf_address = increment_CIDR_address(intf_address, 2, 15)
+
+                change_addr_response = change_address(address, cookie, intf_name, new_intf_address)
+            
             #reconfigure HSRP on VLAN SVIs (using new addresses with the same group that was previously configured)
 
             #reconfigure OSPF on VLAN SVIs (OSPF process 1, area 0.0.0.0)
+
+            #create VLAN 120
 
 
         elif device['type'] == "IOS-XE":
@@ -456,7 +542,8 @@ def main():
             #reconfigure addresses
                 #get dictionary of interfaces with addresses using API call
                 #iterate the dictionary of interfaces
-                    #use add_val() to increment the second octet of the address (needs to be x.31.x.x)
+                    #use increment_address() or increment_CIDR_address() to increment the second octet of the address (needs to be x.31.x.x)
+                    ###increment_CIDR_address() is handy for dealing with devices that output addresses in CIDR form
                     #use another API call to change the address on the interface
 
             #reconfigure OSPF (this is only for bonus points -- can be done manually for this assignment)
@@ -465,4 +552,6 @@ def main():
         else:
             print("Invalid JSON object in file")
 
-        
+
+
+main()       
