@@ -1,0 +1,22 @@
+[
+  {
+    "hostname": "dist-sw01",
+    "type": "NX-OS",
+    "mgmtIP": "10.10.20.177"
+  },
+  {
+    "hostname": "dist-sw02",
+    "type": "NX-OS",
+    "mgmtIP": "10.10.20.178"
+  },
+  {
+    "hostname": "dist-rtr01",
+    "type": "IOS-XE",
+    "mgmtIP": "10.10.20.175"
+  },
+  {
+    "hostname": "dist-rtr02",
+    "type": "IOS-XE",
+    "mgmtIP": "10.10.20.176"
+  }
+]
