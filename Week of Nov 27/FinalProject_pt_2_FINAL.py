@@ -81,12 +81,14 @@ def get_cookie(address) :
 
     payload= {"aaaUser" :
               {"attributes" :
-                   {"name" : "cisco",
-                    "pwd" : "cisco"}
+                   {"name" : "admin",
+                    "pwd" : "RG!_Yw200"}
                }
           }
 
     response = requests.post(url, json=payload, verify = False)
+
+    #test = response.json()["imdata"][0]["aaaLogin"]["attributes"]["token"]
     
     return response.json()["imdata"][0]["aaaLogin"]["attributes"]["token"]
 
@@ -179,7 +181,7 @@ def create_VLAN(device_address, vlan_num, vlan_name, cookie):
               "l2BD": {
                 "attributes": {
                   "fabEncap": "vlan-" + str(vlan_num),
-                  "name": vlan_name,
+                  "name": str(vlan_name),
                   "pcTag": "1" #this attribute is not necessary -- it is "the default classId for the unknown Unicast traffic terminating on the L2 bridge-domain"
         }}}]}}
 
@@ -442,8 +444,8 @@ def VLAN_SVI_OSPF(device_addr, SVI_name, OSPF_process, OSPF_area, cookie):
 def get_int_rest(device_IP):
     url = "https://" + device_IP + ":443/restconf/data/ietf-interfaces:interfaces"
 
-    username = 'cisco'
-    password = 'cisco'
+    username = 'developer'
+    password = 'C1sco12345'
     payload={}
     headers = {
       'Content-Type': 'application/yang-data+json',
@@ -466,8 +468,8 @@ def get_int_rest(device_IP):
 """ONLY IOS-XE DEVICES"""
 def change_intf_address(device_addr, intf_name, new_addr, new_netmask):
     url = "https://" + device_addr + ":443/restconf/data/ietf-interfaces:interfaces/interface=" + intf_name
-    username = 'cisco'
-    password = 'cisco'
+    username = 'developer'
+    password = 'C1sco12345'
     payload={"ietf-interfaces:interface": {
                         "name": intf_name,
                         "description": "Configured by RESTCONF",
@@ -508,30 +510,30 @@ def load_inventory(filename):
 def main():
 
     """this list of dictionaries currently resides in a JSON file and is called by the load_inventory() function"""
-##    devices = [
-##        {
-##            "hostname": "dist-sw01",
-##            "type": "NX-OS",
-##            "mgmtIP": "10.10.20.177"
-##        },
-##        {
-##            "hostname": "dist-sw02",
-##            "type": "NX-OS",
-##            "mgmtIP": "10.10.20.178"
-##        },
-##        {
-##            "hostname": "dist-rtr01",
-##            "type": "IOS-XE",
-##            "mgmtIP": "10.10.20.175"
-##        },
-##        {
-##            "hostname": "dist-rtr02",
-##            "type": "IOS-XE",
-##            "mgmtIP": "10.10.20.176"
-##        }
-##        ]
+    devices = [
+        {
+            "hostname": "dist-sw01",
+            "type": "NX-OS",
+            "mgmtIP": "10.10.20.40"
+        },
+        {
+            "hostname": "dist-sw02",
+            "type": "None",
+            "mgmtIP": "10.10.20.178"
+        },
+        {
+            "hostname": "dist-rtr01",
+            "type": "None",
+            "mgmtIP": "10.10.20.48"
+        },
+        {
+            "hostname": "dist-rtr02",
+            "type": "None",
+            "mgmtIP": "10.10.20.176"
+        }
+        ]
 
-    devices = load_inventory("inventory.json")
+    #devices = load_inventory("inventory.json")
 
     #counts how many devices a new VLAN has been created/configured on
     ##it is used to increment the IP address for the VLAN SVI
@@ -539,6 +541,7 @@ def main():
 
     for device in devices:
 
+        #NX-OS process
         if device['type'] == "NX-OS":
 
             device_address = device['mgmtIP']
@@ -553,55 +556,110 @@ def main():
                 interface_address = get_interface_address(device_address, interface_name, cookie)
                 new_interface_address = increment_CIDR_address(interface_address, 2, 15)
                 change_address_response = change_address(device_address, cookie, interface_name, new_interface_address)
+                if len(change_address_response['imdata']) == 0:
+                    print(f"{interface_name} IP address changed to {new_interface_address}")
+                else:
+                    print(f"Error: {change_address_response}")
                 
                 if "vlan" in interface_name.lower():
                     #reconfigure HSRP on VLAN SVIs (using new addresses with the same group that was previously configured)
                     HSRP_address = calculate_HSRP_address(new_interface_address, 1)
                     HSRP_group = 10
-                    VLAN_SVI_HSRP(device_address, cookie, interface_name, HSRP_group, HSRP_address)
+                    VLAN_SVI_HSRP_response = VLAN_SVI_HSRP(device_address, cookie, interface_name, HSRP_group, HSRP_address)
+                    if len(VLAN_SVI_HSRP_response['imdata']) == 0:
+                        print(f"{interface_name} added to HSRP group {HSRP_group} with address {HSRP_address}")
+                    else:
+                        print(f"Error: {VLAN_SVI_HSRP_response}")
 
                     #reconfigure OSPF on VLAN SVIs (OSPF process 1, area 0.0.0.0)
                     OSPF_process = 1
                     OSPF_area = "0.0.0.0"
-                    VLAN_SVI_OSPF(device_address, interface_name, OSPF_process, OSPF_area, cookie)
+                    VLAN_SVI_OSPF_response = VLAN_SVI_OSPF(device_address, interface_name, OSPF_process, OSPF_area, cookie)
+                    if len(VLAN_SVI_OSPF_response['imdata']) == 0:
+                        print(f"{interface_name} added to OSPF process {OSPF_process} in OSPF area {OSPF_area}")
+                    else:
+                        print(f"Error: {VLAN_SVI_OSPF_response}")
 
             #create VLAN 120
             vlan_num = 120
             vlan_name = "script"
             vlan_default_CIDR_address = "172.31.120.1/24"
             vlan_svi_CIDR_address = increment_CIDR_address(vlan_default_CIDR_address, 4, new_vlan_device_counter)
+
             create_VLAN_120 = create_VLAN(device_address, vlan_num, vlan_name, cookie)
+            if len(create_VLAN_120['imdata']) == 0:
+                print(f"Created VLAN {vlan_num}")
+            else:
+                print(f"Error: {create_VLAN_120}")                
+
             create_VLAN_SVI_120 = create_VLAN_SVI(device_address, vlan_num, vlan_svi_CIDR_address, cookie)
+            if len(create_VLAN_SVI_120['imdata']) == 0:
+                print(f"Created VLAN {vlan_num} SVI")
+            else:
+                print(f"Error: {create_VLAN_SVI_120}")  
 
             #VLAN 120 HSRP
             HSRP_address = vlan_default_CIDR_address
             HSRP_group = 10
             interface_name = "Vlan120"
-            VLAN_SVI_HSRP(device_address, cookie, interface_name, HSRP_group, HSRP_address)
+            VLAN_SVI_HSRP_response = VLAN_SVI_HSRP(device_address, cookie, interface_name, HSRP_group, HSRP_address)
+            if len(VLAN_SVI_HSRP_response['imdata']) == 0:
+                print(f"{interface_name} added to HSRP group {HSRP_group} with address {HSRP_address}")
+            else:
+                print(f"Error: {VLAN_SVI_HSRP_response}")
 
             #VLAN 120 OSPF
             OSPF_process = 1
             OSPF_area = "0.0.0.0"
-            VLAN_SVI_OSPF(device_address, interface_name, OSPF_process, OSPF_area, cookie)
+            VLAN_SVI_OSPF_response = VLAN_SVI_OSPF(device_address, interface_name, OSPF_process, OSPF_area, cookie)
+            if len(VLAN_SVI_OSPF_response['imdata']) == 0:
+                print(f"{interface_name} added to OSPF process {OSPF_process} in OSPF area {OSPF_area}")
+            else:
+                print(f"Error: {VLAN_SVI_OSPF_response}")
 
             new_vlan_device_counter += 1
-
-        elif device['type'] == "IOS-XE":
-
-            address = device['mgmtIP']
-
-            #reconfigure addresses
-                #get dictionary of interfaces with addresses using API call
-                #iterate the dictionary of interfaces
-                    #use increment_address() or increment_CIDR_address() to increment the second octet of the address (needs to be x.31.x.x)
-                    ###increment_CIDR_address() is handy for dealing with devices that output addresses in CIDR form
-                    #use another API call to change the address on the interface
-
-            #reconfigure OSPF (this is only for bonus points -- can be done manually for this assignment)
             
+        #IOS-XE process
+        if device['type'] == "IOS-XE":
 
-        else:
-            pass
+            #use the value of mgmtIP to connect to IOS-XE management addresses
+            get_iosxe_address = device['mgmtIP']
+
+            #make API call to obtain list of interfaces
+            iosxe_interface_list = get_int_rest(get_iosxe_address)
+
+            #iterate through each interface on IOS-XE devices
+            for interface in iosxe_interface_list:
+               #print(interface)
+                
+                #set interface name to interface being configured
+                interface_name = interface['name']
+                
+                #if interface_name chooses the management port or loopback0, ignore it
+                if interface_name in ["GigabitEthernet1", "VirtualPortGroup0"]:
+                    #continues to end of loop, skipping following code
+                    continue
+                
+
+
+                if interface["type"] == "iana-if-type:ethernetCsmacd":
+                    if len(interface['ietf-ip:ipv4']) != 0:
+                        #get IP address
+                        current_addr = interface['ietf-ip:ipv4']['address'][0]['ip']
+                        #get netmask
+                        netmask = interface['ietf-ip:ipv4']['address'][0]['netmask']
+                        print("Current: ", interface_name, current_addr, netmask)
+                                  
+                        #modify the current address from 172.16.x.x to 172.31.x.x
+                        new_addr = increment_address(current_addr, 2, -15)
+
+                        #notice user of changes underway
+                        #print(f"Updated {interface_name} IP address to {new_addr}")
+                        print("New: ", interface_name, new_addr, netmask)
+                        
+                        #make API call to change address on the interface
+                        new_interface_specs = change_intf_address(device["mgmtIP"], interface_name, new_addr, netmask)
+                        print("API call status: ", new_interface_specs)
 
 
 
